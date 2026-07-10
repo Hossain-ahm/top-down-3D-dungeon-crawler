@@ -15,6 +15,9 @@ public class MeleeAttack : MonoBehaviour
     public GameObject swingEffectPrefab;
     public GameObject hitEffectPrefab;
     public Transform effectSpawnPoint; // reuse FirePoint
+    
+    [Header("Damage")]
+    public float damage = 20f;
 
     private float _nextSwingTime = 0f;
     private Rigidbody _rb;
@@ -40,7 +43,10 @@ public class MeleeAttack : MonoBehaviour
         foreach (var hit in hits)
         {
             if (hit.gameObject == gameObject) continue;
-            Debug.Log($"Melee hit: {hit.gameObject.name}");
+
+            Health health = hit.gameObject.GetComponent<Health>();
+            if (health != null)
+                health.TakeDamage(damage);
 
             if (hitEffectPrefab != null)
                 Instantiate(hitEffectPrefab, hit.ClosestPoint(origin), Quaternion.identity);

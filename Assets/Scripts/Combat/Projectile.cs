@@ -5,6 +5,7 @@ public class Projectile : MonoBehaviour
     [Header("Settings")]
     public float speed = 20f;
     public float lifetime = 3f;
+    public float damage = 10f;
 
     [Header("Effects")]
     public GameObject impactEffectPrefab;
@@ -25,6 +26,10 @@ public class Projectile : MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag("Player")) return;
+
+        Health health = collision.gameObject.GetComponent<Health>();
+        if (health != null)
+            health.TakeDamage(damage);
 
         if (impactEffectPrefab != null)
             Instantiate(impactEffectPrefab, transform.position, Quaternion.identity);
