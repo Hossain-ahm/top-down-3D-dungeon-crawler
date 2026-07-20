@@ -117,4 +117,6 @@ public class PlayerController : MonoBehaviour
         Gizmos.color = Color.green;
         Gizmos.DrawRay(transform.position, _moveInput * 2f);
     }
+    
+    
 }
