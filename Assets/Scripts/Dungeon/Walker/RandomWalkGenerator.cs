@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 public class RandomWalkGenerator : MonoBehaviour
@@ -16,12 +17,8 @@ public class RandomWalkGenerator : MonoBehaviour
     public int iterations = 6;
 
     [Header("Zone Spawning")]
-    [Tooltip("How many tiles wide/tall each spawn zone is.")]
     public int zoneSize = 20;
-
-    [Tooltip("Minimum floor tiles in a chunk before it becomes a zone.")]
     public int minTilesPerZone = 10;
-
     public float spawnDelay = 0.5f;
 
     [Header("References")]
@@ -29,6 +26,28 @@ public class RandomWalkGenerator : MonoBehaviour
     public GameObject player;
     public GameObject enemyPrefab;
     public float enemiesPerTile = 0.015f;
+
+    [Header("Entrance & Exit Rooms")]
+    public int roomWidth  = 8;
+    public int roomHeight = 6;
+
+    [Header("Entrance & Exit Door")]
+    public GameObject EntranceDoorPrefab;
+    public GameObject ExitDoorPrefab;
+    private Vector3 _entranceDoorPos;
+    private Vector3 _exitDoorPos;
+
+    [Header("Level Management")]
+    public LevelManager levelManager;
+
+    [Range(0f, 1f)]
+    public float exitBias = 0.3f;
+
+    private RoomData _entranceRoom;
+    private RoomData _exitRoom;
+    private Vector2Int _entranceCentre;
+    private Vector2Int _exitCentre;
+    private int _config;
 
     private System.Random _rng;
     private List<Vector2Int> _floorTiles = new List<Vector2Int>();
@@ -45,6 +64,12 @@ public class RandomWalkGenerator : MonoBehaviour
         if (randomSeedOnStart)
             seed = Random.Range(0, int.MaxValue);
 
+        StartCoroutine(GenerateAfterPhysics());
+    }
+
+    private IEnumerator GenerateAfterPhysics()
+    {
+        yield return new WaitForSeconds(0.5f);
         Generate(seed);
     }
 
@@ -56,48 +81,129 @@ public class RandomWalkGenerator : MonoBehaviour
 
         tileGrid.Initialise(gridWidth, gridHeight);
 
+        PlaceEntranceAndExitRooms();
         Walk();
         tileGrid.SpawnTiles();
         CreateZoneSpawners();
         SpawnPlayer();
+        PlaceDoors();
 
-        Debug.Log($"Random Walk dungeon generated with seed {seed} — {_floorTiles.Count} floor tiles");
+        Debug.Log($"Cave generated with seed {seed}");
+    }
+
+    private void PlaceEntranceAndExitRooms()
+    {
+        _config = _rng.Next(0, 4);
+
+        switch (_config)
+        {
+            case 0:
+                _entranceRoom = new RoomData(5, gridHeight / 2 - roomHeight / 2, roomWidth, roomHeight);
+                _exitRoom     = new RoomData(gridWidth - roomWidth - 5, gridHeight / 2 - roomHeight / 2, roomWidth, roomHeight);
+                break;
+            case 1:
+                _entranceRoom = new RoomData(gridWidth - roomWidth - 5, gridHeight / 2 - roomHeight / 2, roomWidth, roomHeight);
+                _exitRoom     = new RoomData(5, gridHeight / 2 - roomHeight / 2, roomWidth, roomHeight);
+                break;
+            case 2:
+                _entranceRoom = new RoomData(gridWidth / 2 - roomWidth / 2, 5, roomWidth, roomHeight);
+                _exitRoom     = new RoomData(gridWidth / 2 - roomWidth / 2, gridHeight - roomHeight - 5, roomWidth, roomHeight);
+                break;
+            case 3:
+                _entranceRoom = new RoomData(gridWidth / 2 - roomWidth / 2, gridHeight - roomHeight - 5, roomWidth, roomHeight);
+                _exitRoom     = new RoomData(gridWidth / 2 - roomWidth / 2, 5, roomWidth, roomHeight);
+                break;
+        }
+
+        _entranceCentre = _entranceRoom.Centre;
+        _exitCentre     = _exitRoom.Centre;
+
+        switch (_config)
+        {
+            case 0:
+                _entranceDoorPos = new Vector3(_entranceRoom.x + _entranceRoom.width - 1, 1f, _entranceCentre.y);
+                _exitDoorPos     = new Vector3(_exitRoom.x, 1f, _exitCentre.y);
+                break;
+            case 1:
+                _entranceDoorPos = new Vector3(_entranceRoom.x, 1f, _entranceCentre.y);
+                _exitDoorPos     = new Vector3(_exitRoom.x + _exitRoom.width - 1, 1f, _exitCentre.y);
+                break;
+            case 2:
+                _entranceDoorPos = new Vector3(_entranceCentre.x, 1f, _entranceRoom.y + _entranceRoom.height - 1);
+                _exitDoorPos     = new Vector3(_exitCentre.x, 1f, _exitRoom.y);
+                break;
+            case 3:
+                _entranceDoorPos = new Vector3(_entranceCentre.x, 1f, _entranceRoom.y);
+                _exitDoorPos     = new Vector3(_exitCentre.x, 1f, _exitRoom.y + _exitRoom.height - 1);
+                break;
+        }
+
+        CarveRoom(_entranceRoom);
+        CarveRoom(_exitRoom);
+    }
+
+    private void CarveRoom(RoomData room)
+    {
+        for (int x = room.x; x < room.x + room.width; x++)
+        {
+            for (int y = room.y; y < room.y + room.height; y++)
+            {
+                tileGrid.SetTile(x, y, TileType.Floor);
+                _floorTiles.Add(new Vector2Int(x, y));
+            }
+        }
     }
 
     private void Walk()
     {
-        Vector2Int centre = new Vector2Int(gridWidth / 2, gridHeight / 2);
+        Vector2Int startPos = _entranceCentre;
 
         for (int i = 0; i < iterations; i++)
         {
-            Vector2Int pos = centre;
+            Vector2Int pos = startPos;
             int steps = walkLength / iterations;
 
             for (int step = 0; step < steps; step++)
             {
-                pos.x = Mathf.Clamp(pos.x, 1, gridWidth  - 2);
-                pos.y = Mathf.Clamp(pos.y, 1, gridHeight - 2);
+                pos.x = Mathf.Clamp(pos.x, 1, gridWidth  - 3);
+                pos.y = Mathf.Clamp(pos.y, 1, gridHeight - 3);
 
-                if (tileGrid.GetTile(pos.x, pos.y) != TileType.Floor)
+                tileGrid.SetTile(pos.x,     pos.y,     TileType.Floor);
+                tileGrid.SetTile(pos.x + 1, pos.y,     TileType.Floor);
+                tileGrid.SetTile(pos.x,     pos.y + 1, TileType.Floor);
+                tileGrid.SetTile(pos.x + 1, pos.y + 1, TileType.Floor);
+
+                if (!_floorTiles.Contains(pos))
                 {
-                    tileGrid.SetTile(pos.x, pos.y, TileType.Floor);
                     _floorTiles.Add(pos);
+                    _floorTiles.Add(new Vector2Int(pos.x + 1, pos.y));
+                    _floorTiles.Add(new Vector2Int(pos.x,     pos.y + 1));
+                    _floorTiles.Add(new Vector2Int(pos.x + 1, pos.y + 1));
                 }
 
-                int dir = _rng.Next(0, 4);
-                pos += Directions[dir];
+                if (_rng.NextDouble() < exitBias)
+                {
+                    Vector2Int toExit = _exitCentre - pos;
+                    if (Mathf.Abs(toExit.x) > Mathf.Abs(toExit.y))
+                        pos.x += (int)Mathf.Sign(toExit.x);
+                    else
+                        pos.y += (int)Mathf.Sign(toExit.y);
+                }
+                else
+                {
+                    int dir = _rng.Next(0, 4);
+                    pos += Directions[dir];
+                }
             }
         }
     }
 
     private void CreateZoneSpawners()
     {
-        // Figure out how many chunks fit in the grid
         int chunksX = Mathf.CeilToInt((float)gridWidth  / zoneSize);
         int chunksY = Mathf.CeilToInt((float)gridHeight / zoneSize);
 
-        // Player spawn is always at grid centre
-        Vector2Int playerTile = new Vector2Int(gridWidth / 2, gridHeight / 2);
+        Vector2Int playerTile = _entranceCentre;
         int playerChunkX = playerTile.x / zoneSize;
         int playerChunkY = playerTile.y / zoneSize;
 
@@ -107,7 +213,6 @@ public class RandomWalkGenerator : MonoBehaviour
         {
             for (int cy = 0; cy < chunksY; cy++)
             {
-                // Collect floor tiles that fall inside this chunk
                 List<Vector2Int> tilesInChunk = new List<Vector2Int>();
                 foreach (var tile in _floorTiles)
                 {
@@ -115,41 +220,30 @@ public class RandomWalkGenerator : MonoBehaviour
                         tilesInChunk.Add(tile);
                 }
 
-                // Skip chunks with too few floor tiles — not worth a zone
                 if (tilesInChunk.Count < minTilesPerZone) continue;
 
-                // Calculate zone centre in world space
                 float worldX = (cx * zoneSize + zoneSize / 2f);
                 float worldZ = (cy * zoneSize + zoneSize / 2f);
 
-                // Create trigger zone
                 GameObject zoneObj = new GameObject($"CaveZone_{cx}_{cy}");
+                zoneObj.tag = "Zone";
                 zoneObj.transform.position = new Vector3(worldX, 1f, worldZ);
 
                 BoxCollider trigger = zoneObj.AddComponent<BoxCollider>();
                 trigger.isTrigger = true;
                 trigger.size = new Vector3(zoneSize - 0.5f, 2f, zoneSize - 0.5f);
 
-                // Wire up spawner
                 RoomSpawner spawner = zoneObj.AddComponent<RoomSpawner>();
                 spawner.enemyPrefab  = enemyPrefab;
                 spawner.spawnDelay   = spawnDelay;
                 spawner.roomSeed     = seed + zoneIndex * 1000;
-
-                // Use chunk bounds as the spawn area
-                spawner.roomX      = cx * zoneSize;
-                spawner.roomY      = cy * zoneSize;
-                spawner.roomWidth  = zoneSize;
-                spawner.roomHeight = zoneSize;
-
-                // Scale enemy count with how many floor tiles are in this zone
-                spawner.enemyCount = Mathf.Max(1,
+                spawner.roomX        = cx * zoneSize;
+                spawner.roomY        = cy * zoneSize;
+                spawner.roomWidth    = zoneSize;
+                spawner.roomHeight   = zoneSize;
+                spawner.enemyCount   = Mathf.Max(1,
                     Mathf.RoundToInt(tilesInChunk.Count * enemiesPerTile));
-
-                // Mark the zone containing the player spawn as safe
-                spawner.isFirstRoom = (cx == playerChunkX && cy == playerChunkY);
-
-                // Pass confirmed floor tiles so enemies only spawn on walkable ground
+                spawner.isFirstRoom  = (cx == playerChunkX && cy == playerChunkY);
                 spawner.validFloorTiles = tilesInChunk;
                 zoneIndex++;
             }
@@ -159,7 +253,63 @@ public class RandomWalkGenerator : MonoBehaviour
     private void SpawnPlayer()
     {
         if (player == null) return;
-        Vector2Int centre = new Vector2Int(gridWidth / 2, gridHeight / 2);
-        player.transform.position = new Vector3(centre.x, 1f, centre.y);
+
+        Vector3 spawnPos = new Vector3(_entranceCentre.x, 1.5f, _entranceCentre.y);
+
+        Rigidbody rb = player.GetComponent<Rigidbody>();
+        rb.isKinematic = true;
+        player.transform.position = spawnPos;
+        Physics.SyncTransforms();
+        rb.isKinematic = false;
+        rb.linearVelocity = Vector3.zero;
+    }
+
+private void PlaceDoors()
+{
+    Debug.Log($"PlaceDoors called — entrance: {_entranceDoorPos}, exit: {_exitDoorPos}");
+    Debug.Log($"EntrancePrefab null: {EntranceDoorPrefab == null}, ExitPrefab null: {ExitDoorPrefab == null}");
+    
+    if (EntranceDoorPrefab == null || ExitDoorPrefab == null)
+    {
+        Debug.LogError("Door prefabs not assigned!");
+        return;
+    }
+
+    GameObject entranceDoor = Instantiate(EntranceDoorPrefab, _entranceDoorPos, Quaternion.identity);
+    entranceDoor.tag = "Door";
+    DoorInteractable entranceInteract = entranceDoor.GetComponent<DoorInteractable>();
+    entranceInteract.isEntrance   = true;
+    entranceInteract.levelManager = levelManager;
+
+GameObject exitDoor = Instantiate(ExitDoorPrefab, _exitDoorPos, Quaternion.identity);
+exitDoor.tag = "Door";
+
+DoorInteractable exitInteract = exitDoor.GetComponent<DoorInteractable>();
+if (exitInteract == null)
+{
+    Debug.LogError("DoorInteractable missing on ExitDoor prefab!");
+    return;
+}
+exitInteract.isEntrance   = false;
+exitInteract.levelManager = levelManager;
+    exitInteract.isEntrance   = false;
+    exitInteract.levelManager = levelManager;
+}
+
+    public void ClearDungeon()
+    {
+        foreach (Transform child in tileGrid.transform)
+            DestroyImmediate(child.gameObject);
+
+        foreach (GameObject zone in GameObject.FindGameObjectsWithTag("Zone"))
+            DestroyImmediate(zone);
+
+        foreach (GameObject door in GameObject.FindGameObjectsWithTag("Door"))
+            DestroyImmediate(door);
+
+        foreach (GameObject enemy in GameObject.FindGameObjectsWithTag("Enemy"))
+            DestroyImmediate(enemy);
+
+        _floorTiles.Clear();
     }
 }

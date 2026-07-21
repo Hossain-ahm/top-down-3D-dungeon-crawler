@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Top-down player controller using Rigidbody for physics-based movement.
@@ -31,6 +32,32 @@ public class PlayerController : MonoBehaviour
     // State
     private Vector3 _moveInput;
     private Vector3 _targetVelocity;
+
+// Field
+private DoorInteractable _nearbyDoor;
+
+public void OnInteract(InputValue value)
+{
+    if (!value.isPressed) return;
+    if (_nearbyDoor != null)
+        _nearbyDoor.Interact();
+}
+
+private void OnTriggerEnter(Collider other)
+{
+    DoorInteractable door = other.GetComponent<DoorInteractable>();
+    if (door != null)
+    {
+        _nearbyDoor = door;
+    }
+}
+
+private void OnTriggerExit(Collider other)
+{
+    DoorInteractable door = other.GetComponent<DoorInteractable>();
+    if (door != null)
+        _nearbyDoor = null;
+}
 
     private void Awake()
     {

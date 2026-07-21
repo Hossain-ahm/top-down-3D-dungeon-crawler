@@ -366,6 +366,7 @@ MonoBehaviour:
   swingEffectPrefab: {fileID: 7427769425581725418, guid: 58aca420efadc2a7b8d4bdf5aac3637b, type: 3}
   hitEffectPrefab: {fileID: 5319386165631077741, guid: 3ffa093e4dc93a1d0b84c07aebde8846, type: 3}
   effectSpawnPoint: {fileID: 1466783330}
+  damage: 20
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -1033,6 +1034,79 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 851798887}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1420683553
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1420683556}
+  - component: {fileID: 1420683555}
+  - component: {fileID: 1420683554}
+  m_Layer: 0
+  m_Name: DungeonGenerator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1420683554
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1420683553}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c86b006d56ac465987c5a9f11ae1b7f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TileGrid
+  floorPrefab: {fileID: 7519512324525242551, guid: c7f770a33ac41cd21ab5a2cdd0551333, type: 3}
+  wallPrefab: {fileID: 5885882066193446782, guid: 67bb7c582f492edebb14021e69a63f54, type: 3}
+  tileSize: 1
+--- !u!114 &1420683555
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1420683553}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbd9c75ece44d34ce9c4c5fb75e8a798, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RandomWalkGenerator
+  seed: 12345
+  randomSeedOnStart: 0
+  gridWidth: 80
+  gridHeight: 80
+  walkLength: 1200
+  iterations: 6
+  zoneSize: 20
+  minTilesPerZone: 10
+  spawnDelay: 0.5
+  tileGrid: {fileID: 1420683554}
+  player: {fileID: 212843248}
+  enemyPrefab: {fileID: 4744293781711653832, guid: 2097ff86ab6661f1fa5a14636a800af2, type: 3}
+  enemiesPerTile: 0.015
+--- !u!4 &1420683556
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1420683553}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1466783329
 GameObject:
   m_ObjectHideFlags: 0
@@ -1079,7 +1153,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1487580747
 Transform:
   m_ObjectHideFlags: 0
@@ -1333,3 +1407,4 @@ SceneRoots:
   - {fileID: 832575519}
   - {fileID: 1487580747}
   - {fileID: 212843254}
+  - {fileID: 1420683556}
