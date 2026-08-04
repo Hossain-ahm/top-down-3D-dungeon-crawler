@@ -24,8 +24,12 @@ public class RandomWalkGenerator : MonoBehaviour
     [Header("References")]
     public TileGrid tileGrid;
     public GameObject player;
-    public GameObject enemyPrefab;
     public float enemiesPerTile = 0.015f;
+	
+[Header("Enemy Prefabs")]
+public GameObject meleePrefab;
+public GameObject rangedPrefab;
+	
 
     [Header("Entrance & Exit Rooms")]
     public int roomWidth  = 8;
@@ -73,9 +77,14 @@ public class RandomWalkGenerator : MonoBehaviour
         Generate(seed);
     }
 
-    public void Generate(int dungeonSeed)
+public void Generate(int dungeonSeed)
+{
+    int attempts = 0;
+    const int maxAttempts = 10;
+
+    do
     {
-        seed = dungeonSeed;
+        seed = dungeonSeed + attempts;
         _rng = new System.Random(seed);
         _floorTiles.Clear();
 
@@ -83,13 +92,25 @@ public class RandomWalkGenerator : MonoBehaviour
 
         PlaceEntranceAndExitRooms();
         Walk();
-        tileGrid.SpawnTiles();
-        CreateZoneSpawners();
-        SpawnPlayer();
-        PlaceDoors();
 
-        Debug.Log($"Cave generated with seed {seed}");
-    }
+        attempts++;
+
+        if (attempts >= maxAttempts)
+        {
+            Debug.LogWarning("Could not generate traversable cave after max attempts");
+            break;
+        }
+
+    } while (!IsTraversable());
+
+    // Only spawn tiles and objects once traversability is confirmed
+    tileGrid.SpawnTiles();
+    CreateZoneSpawners();
+    SpawnPlayer();
+    PlaceDoors();
+
+    Debug.Log($"Cave generated with seed {seed} after {attempts} attempt(s)");
+}
 
     private void PlaceEntranceAndExitRooms()
     {
@@ -234,7 +255,9 @@ public class RandomWalkGenerator : MonoBehaviour
                 trigger.size = new Vector3(zoneSize - 0.5f, 2f, zoneSize - 0.5f);
 
                 RoomSpawner spawner = zoneObj.AddComponent<RoomSpawner>();
-                spawner.enemyPrefab  = enemyPrefab;
+                spawner.meleePrefab = meleePrefab;
+    			spawner.rangedPrefab = rangedPrefab;
+				spawner.meleeRatio   = 0.6f;
                 spawner.spawnDelay   = spawnDelay;
                 spawner.roomSeed     = seed + zoneIndex * 1000;
                 spawner.roomX        = cx * zoneSize;
@@ -264,10 +287,10 @@ public class RandomWalkGenerator : MonoBehaviour
         rb.linearVelocity = Vector3.zero;
     }
 
+
+
 private void PlaceDoors()
 {
-    Debug.Log($"PlaceDoors called — entrance: {_entranceDoorPos}, exit: {_exitDoorPos}");
-    Debug.Log($"EntrancePrefab null: {EntranceDoorPrefab == null}, ExitPrefab null: {ExitDoorPrefab == null}");
     
     if (EntranceDoorPrefab == null || ExitDoorPrefab == null)
     {
@@ -287,13 +310,10 @@ exitDoor.tag = "Door";
 DoorInteractable exitInteract = exitDoor.GetComponent<DoorInteractable>();
 if (exitInteract == null)
 {
-    Debug.LogError("DoorInteractable missing on ExitDoor prefab!");
     return;
 }
 exitInteract.isEntrance   = false;
 exitInteract.levelManager = levelManager;
-    exitInteract.isEntrance   = false;
-    exitInteract.levelManager = levelManager;
 }
 
     public void ClearDungeon()
@@ -309,7 +329,43 @@ exitInteract.levelManager = levelManager;
 
         foreach (GameObject enemy in GameObject.FindGameObjectsWithTag("Enemy"))
             DestroyImmediate(enemy);
+		foreach (GameObject proj in GameObject.FindGameObjectsWithTag("EnemyProjectile"))
+    		DestroyImmediate(proj);
 
         _floorTiles.Clear();
     }
+
+private bool IsTraversable()
+{
+    // Flood fill from entrance centre
+    // Check if exit centre is reachable
+    HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
+    Queue<Vector2Int> queue = new Queue<Vector2Int>();
+
+    queue.Enqueue(_entranceCentre);
+    visited.Add(_entranceCentre);
+
+    while (queue.Count > 0)
+    {
+        Vector2Int current = queue.Dequeue();
+
+        // If we reached the exit, cave is traversable
+        if (current == _exitCentre)
+            return true;
+
+        // Check all 4 neighbours
+        foreach (var dir in Directions)
+        {
+            Vector2Int neighbour = current + dir;
+            if (!visited.Contains(neighbour) && 
+                tileGrid.GetTile(neighbour.x, neighbour.y) == TileType.Floor)
+            {
+                visited.Add(neighbour);
+                queue.Enqueue(neighbour);
+            }
+        }
+    }
+
+    return false;
+}
 }

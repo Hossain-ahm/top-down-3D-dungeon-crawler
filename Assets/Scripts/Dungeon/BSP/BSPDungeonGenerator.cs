@@ -26,10 +26,14 @@ public class BSPDungeonGenerator : MonoBehaviour
     public TileGrid tileGrid;
     public GameObject player;
 
-    [Header("Enemy Spawning")]
-    public GameObject enemyPrefab;
-    public float enemiesPerTile = 0.015f;
-    public float spawnDelay = 0.5f;
+[Header("Enemy Spawning")]
+public float enemiesPerTile = 0.015f;
+public float spawnDelay = 0.5f;
+
+[Header("Enemy Prefabs")]
+public GameObject meleePrefab;
+public GameObject rangedPrefab;
+
 
     private System.Random _rng;
     private BSPNode _rootNode;
@@ -118,7 +122,8 @@ public class BSPDungeonGenerator : MonoBehaviour
             trigger.size = new Vector3(room.width - 0.5f, 2f, room.height - 0.5f);
 
             RoomSpawner spawner = zoneObj.AddComponent<RoomSpawner>();
-            spawner.enemyPrefab  = enemyPrefab;
+            spawner.meleePrefab  = meleePrefab;
+			spawner.rangedPrefab = rangedPrefab;
             spawner.spawnDelay   = spawnDelay;
             spawner.roomX        = room.x;
             spawner.roomY        = room.y;

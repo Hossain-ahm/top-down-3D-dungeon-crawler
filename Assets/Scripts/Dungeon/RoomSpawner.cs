@@ -5,8 +5,14 @@ using System.Collections.Generic;
 public class RoomSpawner : MonoBehaviour
 {
     [Header("Spawning")]
-    public GameObject enemyPrefab;
-    public float spawnDelay = 0.5f;
+public GameObject meleePrefab;
+public GameObject rangedPrefab;
+[Range(0f, 1f)]
+public float meleeRatio = 0.6f;
+[Tooltip("Tiles closer than this distance to the room center spawn melee enemies; further tiles spawn ranged enemies.")]
+public float splitDistance = 4f; 
+public float spawnDelay = 0.5f;
+
 
     [Header("Room Data")]
     public int roomX;
@@ -21,7 +27,6 @@ public class RoomSpawner : MonoBehaviour
     public bool isFirstRoom = false;
 
     // Valid floor tile positions — set by the generator
-    // If empty, falls back to random position within bounds (Room & Corridor)
     [HideInInspector]
     public List<Vector2Int> validFloorTiles = new List<Vector2Int>();
 
@@ -40,9 +45,9 @@ public class RoomSpawner : MonoBehaviour
         SpawnEnemies();
     }
 
-private void SpawnEnemies()
+    private void SpawnEnemies()
 {
-    if (enemyPrefab == null) return;
+    if (meleePrefab == null && rangedPrefab == null) return;
 
     System.Random rng = new System.Random(roomSeed);
 
@@ -60,20 +65,41 @@ private void SpawnEnemies()
         int count = Mathf.Min(enemyCount, shuffled.Count);
         for (int i = 0; i < count; i++)
         {
-            Vector3 spawnPos = new Vector3(shuffled[i].x, 1f, shuffled[i].y);
-            GameObject enemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
-            enemy.tag = "Enemy";
+            GameObject prefabToSpawn = GetEnemyPrefab(rng);
+            if (prefabToSpawn != null)
+            {
+                Vector3 spawnPos = new Vector3(shuffled[i].x, 1.5f, shuffled[i].y);
+                GameObject enemy = Instantiate(prefabToSpawn, spawnPos, Quaternion.identity);
+                enemy.tag = "Enemy";
+            }
         }
     }
     else
     {
         for (int i = 0; i < enemyCount; i++)
         {
-            float x = roomX + 1 + (float)(rng.NextDouble() * (roomWidth  - 2));
+            float x = roomX + 1 + (float)(rng.NextDouble() * (roomWidth - 2));
             float z = roomY + 1 + (float)(rng.NextDouble() * (roomHeight - 2));
-            GameObject enemy = Instantiate(enemyPrefab, new Vector3(x, 1f, z), Quaternion.identity);
-            enemy.tag = "Enemy";
+
+            GameObject prefabToSpawn = GetEnemyPrefab(rng);
+            if (prefabToSpawn != null)
+            {
+                GameObject enemy = Instantiate(prefabToSpawn, new Vector3(x, 1.5f, z), Quaternion.identity);
+                enemy.tag = "Enemy";
+            }
         }
     }
+}
+
+private GameObject GetEnemyPrefab(System.Random rng)
+{
+    float roll = (float)rng.NextDouble();
+
+    if (roll < meleeRatio && meleePrefab != null)
+        return meleePrefab;
+    else if (rangedPrefab != null)
+        return rangedPrefab;
+    else
+        return meleePrefab;
 }
 }

@@ -27,10 +27,12 @@ public class DungeonGenerator : MonoBehaviour
     [Header("Player Spawn")]
     public GameObject player;
     
-    [Header("Enemy Spawning")]
-    public GameObject enemyPrefab;
-    public float enemiesPerTile = 0.015f; // scales enemy count with room size
+[Header("Enemy Spawning")]
+public float enemiesPerTile = 0.015f;
 
+[Header("Enemy Prefabs")]
+public GameObject meleePrefab;
+public GameObject rangedPrefab;
     private List<RoomData> _rooms = new List<RoomData>();
     private System.Random _rng;
 
@@ -138,7 +140,8 @@ public class DungeonGenerator : MonoBehaviour
 
             // Wire up the spawner
             RoomSpawner spawner = zoneObj.AddComponent<RoomSpawner>();
-            spawner.enemyPrefab  = enemyPrefab;
+            spawner.meleePrefab  = meleePrefab;
+			spawner.rangedPrefab = rangedPrefab;
             spawner.roomX        = room.x;
             spawner.roomY        = room.y;
             spawner.roomWidth    = room.width;

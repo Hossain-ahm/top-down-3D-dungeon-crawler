@@ -27,31 +27,31 @@ public class MeleeAttack : MonoBehaviour
         _rb = GetComponent<Rigidbody>();
     }
 
-    public void Swing()
+public void Swing()
+{
+    if (Time.time < _nextSwingTime) return;
+    _nextSwingTime = Time.time + swingCooldown;
+
+    _rb.AddForce(transform.forward * lungeForce, ForceMode.Impulse);
+
+    if (swingEffectPrefab != null && effectSpawnPoint != null)
+        Instantiate(swingEffectPrefab, effectSpawnPoint.position, effectSpawnPoint.rotation, effectSpawnPoint);
+
+    Vector3 origin = transform.position + transform.forward * range;
+    Collider[] hits = Physics.OverlapSphere(origin, radius);
+
+    foreach (var hit in hits)
     {
-        if (Time.time < _nextSwingTime) return;
-        _nextSwingTime = Time.time + swingCooldown;
+        if (hit.gameObject == gameObject) continue;
 
-        _rb.AddForce(transform.forward * lungeForce, ForceMode.Impulse);
+        EnemyBase enemy = hit.gameObject.GetComponent<EnemyBase>();
+        if (enemy != null)
+            enemy.TakeDamage(damage);
 
-        if (swingEffectPrefab != null && effectSpawnPoint != null)
-            Instantiate(swingEffectPrefab, effectSpawnPoint.position, effectSpawnPoint.rotation, effectSpawnPoint);
-
-        Vector3 origin = transform.position + transform.forward * range;
-        Collider[] hits = Physics.OverlapSphere(origin, radius);
-
-        foreach (var hit in hits)
-        {
-            if (hit.gameObject == gameObject) continue;
-
-            Health health = hit.gameObject.GetComponent<Health>();
-            if (health != null)
-                health.TakeDamage(damage);
-
-            if (hitEffectPrefab != null)
-                Instantiate(hitEffectPrefab, hit.ClosestPoint(origin), Quaternion.identity);
-        }
-    }
+        if (hitEffectPrefab != null)
+            Instantiate(hitEffectPrefab, hit.ClosestPoint(origin), Quaternion.identity);
+    } // closes foreach
+}
 
     private void OnDrawGizmosSelected()
     {
