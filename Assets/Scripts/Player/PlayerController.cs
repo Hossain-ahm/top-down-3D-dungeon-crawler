@@ -113,28 +113,36 @@ private void OnTriggerExit(Collider other)
 
     // ─── Rotation ────────────────────────────────────────────────────────────
 
-    private void RotateToCursor()
+private void RotateToCursor()
+{
+    if (_cam == null) return;
+
+    Ray ray = _cam.ScreenPointToRay(Input.mousePosition);
+    Vector3 targetPoint;
+
+    // QueryTriggerInteraction.Ignore skips all trigger colliders
+    if (Physics.Raycast(ray, out RaycastHit hit, 500f, groundLayer, QueryTriggerInteraction.Ignore))
     {
-        if (_cam == null) return;
-
-        Ray ray = _cam.ScreenPointToRay(Input.mousePosition);
-
-        // Raycast against the ground plane to find where the cursor is in world space
-        if (Physics.Raycast(ray, out RaycastHit hit, 100f, groundLayer))
-        {
-            Vector3 direction = hit.point - transform.position;
-            direction.y = 0f;
-
-            if (direction.sqrMagnitude < 0.001f) return;
-
-            Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.RotateTowards(
-                transform.rotation,
-                targetRotation,
-                rotationSpeed * Time.deltaTime
-            );
-        }
+        targetPoint = hit.point;
     }
+    else
+    {
+        // Fallback — horizontal plane at player height
+        Plane groundPlane = new Plane(Vector3.up, transform.position);
+        if (groundPlane.Raycast(ray, out float distance))
+            targetPoint = ray.GetPoint(distance);
+        else
+            return;
+    }
+
+    Vector3 direction = targetPoint - transform.position;
+    direction.y = 0f;
+    if (direction.sqrMagnitude < 0.001f) return;
+
+    Quaternion targetRotation = Quaternion.LookRotation(direction);
+    transform.rotation = Quaternion.RotateTowards(
+        transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+}
 
     // ─── Debug ───────────────────────────────────────────────────────────────
 
