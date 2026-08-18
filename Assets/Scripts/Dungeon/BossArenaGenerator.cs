@@ -15,6 +15,9 @@ public class BossArenaGenerator : MonoBehaviour
     public int gridWidth = 80;
     public int gridHeight = 80;
     public float arenaRadius = 15f;
+    
+    [Header("UI")]
+    public BossHealthUI bossHealthUI;
 
     /// <summary>
     /// Clears existing level, carves a circular boss arena, and spawns the player, boss, and minions.
@@ -32,7 +35,12 @@ public class BossArenaGenerator : MonoBehaviour
 
         BossEnemy boss = _bossInstance.GetComponent<BossEnemy>();
         if (boss != null)
-            boss.SetArenaBounds(bossPos, arenaRadius);
+        {
+            boss.SetArenaBounds(new Vector3(centreX, 3.5f, centreY), arenaRadius);
+
+            if (bossHealthUI != null)
+                bossHealthUI.SetBoss(boss);
+        }
     }
 
     public GameObject GetBoss() => _bossInstance;

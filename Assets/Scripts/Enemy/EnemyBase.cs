@@ -6,6 +6,7 @@ public abstract class EnemyBase : MonoBehaviour
     [Header("Health")]
     public float maxHealth = 100f;
     protected float currentHealth;
+	public float CurrentHealth => currentHealth;
 
     [Header("Ranges")]
     public float detectionRange = 10f;
@@ -15,6 +16,8 @@ public abstract class EnemyBase : MonoBehaviour
     protected Transform _playerTransform;
     protected Rigidbody _rb;
     protected bool _isDead = false;
+
+
 
     protected virtual void Awake()
     {

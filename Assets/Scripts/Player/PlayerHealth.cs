@@ -6,6 +6,8 @@ public class PlayerHealth : MonoBehaviour
     public float maxHealth = 100f;
     private float _currentHealth;
 
+    public float CurrentHealth => _currentHealth;
+
     private void Awake()
     {
         _currentHealth = maxHealth;
@@ -14,7 +16,7 @@ public class PlayerHealth : MonoBehaviour
     public void TakeDamage(float amount)
     {
         _currentHealth -= amount;
-        Debug.Log($"Player took {amount} damage ({_currentHealth}/{maxHealth} HP)");
+        _currentHealth = Mathf.Max(0f, _currentHealth);
 
         if (_currentHealth <= 0f)
             Die();
