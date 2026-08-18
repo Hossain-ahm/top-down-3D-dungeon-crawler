@@ -376,4 +376,12 @@ public class BossEnemy : EnemyBase
         Vector3 origin = transform.position + transform.forward * (swingRadius * 0.5f);
         Gizmos.DrawWireSphere(origin, swingRadius);
     }
+    
+    protected override void Die()
+    {
+        base.Die();
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.Victory();
+    }
 }

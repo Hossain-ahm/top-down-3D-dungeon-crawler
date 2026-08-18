@@ -67,14 +67,6 @@ public GameObject rangedPrefab;
     {
         if (randomSeedOnStart)
             seed = Random.Range(0, int.MaxValue);
-
-        StartCoroutine(GenerateAfterPhysics());
-    }
-
-    private IEnumerator GenerateAfterPhysics()
-    {
-        yield return new WaitForSeconds(0.5f);
-        Generate(seed);
     }
 
 public void Generate(int dungeonSeed)

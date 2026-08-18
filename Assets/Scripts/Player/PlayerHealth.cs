@@ -22,8 +22,9 @@ public class PlayerHealth : MonoBehaviour
             Die();
     }
 
-    private void Die()
-    {
-        Debug.Log("Player died — TODO: game over screen");
-    }
+private void Die()
+{
+    if (GameManager.Instance != null)
+        GameManager.Instance.GameOver();
+}
 }
