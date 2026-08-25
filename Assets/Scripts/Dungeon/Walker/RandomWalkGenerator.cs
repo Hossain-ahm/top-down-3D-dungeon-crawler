@@ -205,6 +205,7 @@ public void Generate(int dungeonSeed)
                 else
                 {
                     int dir = _rng.Next(0, 4);
+					//int dir = UnityEngine.Random.Range(0, 4);
                     pos += Directions[dir];
                 }
             }
@@ -359,5 +360,37 @@ private bool IsTraversable()
     }
 
     return false;
+}
+
+public int LastAttemptCount { get; private set; }
+
+/// <summary>
+/// Generation without instantiation, spawning or player placement.
+/// Produces the grid only — used by the evaluation harness.
+/// </summary>
+public void GenerateForEvaluation(int dungeonSeed)
+{
+    int attempts = 0;
+    const int maxAttempts = 10;
+
+    do
+    {
+        seed = dungeonSeed + attempts;
+        _rng = new System.Random(seed);
+        _floorTiles.Clear();
+
+        tileGrid.Initialise(gridWidth, gridHeight);
+
+        PlaceEntranceAndExitRooms();
+        Walk();
+
+        attempts++;
+
+        if (attempts >= maxAttempts)
+            break;
+
+    } while (!IsTraversable());
+
+    LastAttemptCount = attempts;
 }
 }
