@@ -26,34 +26,30 @@ public class Projectile : MonoBehaviour
         Destroy(gameObject, lifetime);
     }
 
-private void OnCollisionEnter(Collision collision)
-{
-    if (firedByEnemy)
+    private void OnCollisionEnter(Collision collision)
     {
-        // Enemy projectile — damages player, ignores enemies
-        if (collision.gameObject.CompareTag("Enemy")) return;
-
-        if (collision.gameObject.CompareTag("Player"))
+        if (firedByEnemy)
         {
+            // Enemy projectile: ignore other enemies, damage the player
+            if (collision.gameObject.CompareTag("Enemy")) return;
+
             PlayerHealth playerHealth = collision.gameObject.GetComponent<PlayerHealth>();
             if (playerHealth != null)
                 playerHealth.TakeDamage(damage);
         }
+        else
+        {
+            // Player projectile: ignore the player, damage enemies
+            if (collision.gameObject.CompareTag("Player")) return;
+
+            EnemyBase enemy = collision.gameObject.GetComponent<EnemyBase>();
+            if (enemy != null)
+                enemy.TakeDamage(damage);
+        }
+
+        if (impactEffectPrefab != null)
+            Instantiate(impactEffectPrefab, transform.position, Quaternion.identity);
+
+        Destroy(gameObject);
     }
-    else
-    {
-        // Player projectile — damages enemies, ignores player
-        if (collision.gameObject.CompareTag("Player")) return;
-        if (collision.gameObject.CompareTag("Enemy")) return;
-
-        EnemyBase enemy = collision.gameObject.GetComponent<EnemyBase>();
-        if (enemy != null)
-            enemy.TakeDamage(damage);
-    }
-
-    if (impactEffectPrefab != null)
-        Instantiate(impactEffectPrefab, transform.position, Quaternion.identity);
-
-    Destroy(gameObject);
-}
 }
