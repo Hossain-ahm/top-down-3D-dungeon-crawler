@@ -6,18 +6,21 @@ public abstract class EnemyBase : MonoBehaviour
     [Header("Health")]
     public float maxHealth = 100f;
     protected float currentHealth;
-	public float CurrentHealth => currentHealth;
+    public float CurrentHealth => currentHealth;
 
     [Header("Ranges")]
     public float detectionRange = 10f;
     public float attackRange = 2f;
 
+    [Header("Targeting")]
+    public float targetSearchInterval = 0.5f;
+    private float _nextTargetUpdateTime = 0f;
+
     // Protected fields so subclasses can access them
     protected Transform _playerTransform;
     protected Rigidbody _rb;
     protected bool _isDead = false;
-
-
+	public float targetSwitchThreshold = 0.8f;
 
     protected virtual void Awake()
     {
@@ -33,22 +36,49 @@ public abstract class EnemyBase : MonoBehaviour
     protected virtual void Start()
     {
         currentHealth = maxHealth;
-
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
-        {
-            _playerTransform = player.transform;
-        }
+        AcquireTarget();
     }
+
     protected virtual void Update()
     {
-        if (!_isDead && _playerTransform != null)
+        if (_isDead) return;
+
+        // Periodically refresh target rather than checking every frame
+        if (Time.time >= _nextTargetUpdateTime)
+        {
+            AcquireTarget();
+        }
+
+        // Only handle behaviour when a valid player target exists
+        if (_playerTransform != null)
         {
             HandleBehaviour();
         }
     }
 
-    // Virtual method to be overridden by subclasses (e.g., ChaserEnemy, ShooterEnemy)
+protected void AcquireTarget()
+{
+    _nextTargetUpdateTime = Time.time + targetSearchInterval;
+
+    Transform nearest = PlayerRegistry.GetNearest(transform.position);
+    if (nearest == null) { _playerTransform = null; return; }
+
+    // No current target, or current target is gone — take the nearest
+    if (_playerTransform == null)
+    {
+        _playerTransform = nearest;
+        return;
+    }
+
+    // Only switch if the new target is meaningfully closer
+    float currentDist = Vector3.Distance(transform.position, _playerTransform.position);
+    float nearestDist = Vector3.Distance(transform.position, nearest.position);
+
+    if (nearestDist < currentDist * targetSwitchThreshold)
+        _playerTransform = nearest;
+}
+
+    // Virtual method to be overridden by subclasses (e.g., MeleeEnemy, RangedEnemy, BossEnemy)
     protected virtual void HandleBehaviour()
     {
         // Empty by default

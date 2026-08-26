@@ -21,6 +21,16 @@ public class PlayerHealth : MonoBehaviour
         if (_currentHealth <= 0f)
             Die();
     }
+    
+    private void OnEnable()
+    {
+        PlayerRegistry.Register(transform);
+    }
+
+    private void OnDisable()
+    {
+        PlayerRegistry.Unregister(transform);
+    }
 
 private void Die()
 {
